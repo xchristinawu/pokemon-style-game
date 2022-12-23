@@ -4,11 +4,51 @@ const c = canvas.getContext('2d');
 canvas.width = 1024;
 canvas.height = 576;
 
-// set canvas background to white
-c.fillStyle = 'white';
-// 0, 0 starts at top left of canvas
-// canvas.width and canvas.height to specify how wide and tall to fill
-c.fillRect(0, 0, canvas.width, canvas.height);
+const collisionsMap = [];
+// pellet town map is 70 tiles wide, 40 tiles tall
+for (let i = 0; i < collisions.length; i+=70) {
+    collisionsMap.push(collisions.slice(i, i + 70));
+}
+
+// 12x12 pixel tiles, but map is zoomed in at 400%
+// 12 * 4 = 48
+class Boundary {
+    static width = 48;
+    static height = 48;
+
+    constructor({position}) {
+        this.position = position;
+        this.width = 48; 
+        this.height = 48;
+    }
+
+    draw() {
+        c.fillStyle = 'red';
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    }
+}
+
+const boundaries = [];
+const offset = {
+    x: -1504,
+    y: -455
+};
+
+// 1025 is the symbol for collision boundary in json file
+collisionsMap.forEach((row, i) => {
+    row.forEach((symbol, j) => {
+        if (symbol === 1025) { 
+            boundaries.push(
+                new Boundary({
+                    position: {
+                        x: j * Boundary.width + offset.x,
+                        y: i * Boundary.height + offset.y
+                    }
+                })
+            )
+        }
+    })
+});
 
 const image = new Image();
 image.src = './img/Pellet Town.png';
@@ -16,44 +56,46 @@ image.src = './img/Pellet Town.png';
 const playerImage = new Image();
 playerImage.src = './img/playerDown.png';
 
-/*
-image/map takes time to load
-call image.onload to draw the image out once the image is done loading or else it'll be a blank canvas
-since playerImage is smaller, draw it after map is drawn or else map will be layered on top of player image
-*/
-image.onload = () => {
-    // drawImage does not take a filepath, but takes an HTML Image Object <img src="filepath">
-    c.drawImage(image, -1504, -455);
-    c.drawImage(playerImage,
-                0,                          // x coordinate to begin crop
-                0,                          // y coordinate to begin crop
-                playerImage.width / 4,      // crop 1/4 to get leftmost sprite
-                playerImage.height,         // crop entire height of sprite
-                canvas.width / 2 - playerImage.width / 4 / 2,   // x offset to place sprite in center
-                canvas.height / 2 - playerImage.height / 2,  // y offset to place sprite in center
-                playerImage.width / 4,      // width that sprite is rendered out at
-                playerImage.height          // height that sprite is rendered out at
-                );
-};
-
 class Sprite {
-    constructor({position, velocity, image}) {
+    constructor({position, velocity, image, frames = { max: 1 } }) {
         this.position = position;
-        this.image = image
+        this.image = image;
+        this.frames = frames;
     }
 
     draw() {
-        c.drawImage(this.image, this.position.x, this.position.y);
+        c.drawImage(
+            this.image,
+            0,                          // x coordinate to begin crop
+            0,                          // y coordinate to begin crop
+            this.image.width / this.frames.max,     // divide by frames because player sprite has 4 frames, map is 1 frame
+            this.image.height,                      // crop entire height of sprite
+            this.position.x,
+            this.position.y,
+            this.image.width / this.frames.max,     // width that sprite is rendered out at
+            this.image.height                       // height that sprite is rendered out at
+        );
     }
 }
 
+const player = new Sprite({
+    position: {
+        x: canvas.width / 2 - 192 / 4 / 2,
+        y: canvas.height / 2 - 68 / 2,
+    },
+    image: playerImage,
+    frames: {
+        max: 4
+    }
+});
+
 const background = new Sprite({
     position: {
-        x: -1504,
-        y: -455
+        x: offset.x,
+        y: offset.y
     },
     image: image
-})
+});
 
 const keys = {
     w: {
@@ -70,25 +112,35 @@ const keys = {
     }
 };
 
+const testBoundary = new Boundary({
+    position: {
+        x: 400,
+        y: 400
+    }
+});
+
+// array to hold all movables for when key is pressed
+// map and collisions travel the same amount of pixels
+const movables = [background, testBoundary];
+
 function animate() {
     window.requestAnimationFrame(animate);
     background.draw();
-    c.drawImage(playerImage,
-                0,                          // x coordinate to begin crop
-                0,                          // y coordinate to begin crop
-                playerImage.width / 4,      // crop 1/4 to get leftmost sprite
-                playerImage.height,         // crop entire height of sprite
-                canvas.width / 2 - playerImage.width / 4 / 2,   // x offset to place sprite in center
-                canvas.height / 2 - playerImage.height / 2,  // y offset to place sprite in center
-                playerImage.width / 4,      // width that sprite is rendered out at
-                playerImage.height          // height that sprite is rendered out at
-                );
-
+    // boundaries.forEach(boundary => {
+    //     boundary.draw();
+    // });
+    testBoundary.draw();
+    player.draw();
     // if keys pressed, move background image (illusion of movement)
-    if (keys.w.pressed && lastKey === 'w') background.position.y += 3;
-    else if (keys.a.pressed && lastKey === 'a') background.position.x += 3;
-    else if (keys.s.pressed && lastKey === 's') background.position.y -= 3;
-    else if (keys.d.pressed && lastKey === 'd') background.position.x -= 3;
+    if (keys.w.pressed && lastKey === 'w') {
+        movables.forEach(movable => movable.position.y +=3)
+    } else if (keys.a.pressed && lastKey === 'a') {
+        movables.forEach(movable => movable.position.x +=3)
+    } else if (keys.s.pressed && lastKey === 's') {
+        movables.forEach(movable => movable.position.y -=3)
+    } else if (keys.d.pressed && lastKey === 'd') {
+        movables.forEach(movable => movable.position.x -=3)
+    };
 }
 
 animate();
