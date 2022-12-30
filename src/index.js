@@ -10,7 +10,14 @@ for (let i = 0; i < collisions.length; i+=70) {
     collisionsMap.push(collisions.slice(i, i + 70));
 };
 
+const battleZonesMap = [];
+// pellet town map is 70 tiles wide, 40 tiles tall
+for (let i = 0; i < battleZonesData.length; i+=70) {
+    battleZonesMap.push(battleZonesData.slice(i, i + 70));
+};
+
 const boundaries = [];
+// offset centers house to be behind player upon loading game
 const offset = {
     x: -1504,
     y: -467
@@ -21,6 +28,23 @@ collisionsMap.forEach((row, i) => {
     row.forEach((symbol, j) => {
         if (symbol === 1025) { 
             boundaries.push(
+                new Boundary({
+                    position: {
+                        x: j * Boundary.width + offset.x,
+                        y: i * Boundary.height + offset.y
+                    }
+                })
+            )
+        }
+    })
+});
+
+const battleZones = [];
+
+battleZonesMap.forEach((row, i) => {
+    row.forEach((symbol, j) => {
+        if (symbol === 1025) { 
+            battleZones.push(
                 new Boundary({
                     position: {
                         x: j * Boundary.width + offset.x,
@@ -102,7 +126,7 @@ const keys = {
 // array to hold all movables for when key is pressed
 // map and boundaries travel the same amount of pixels
 // ... spread operator to place all boundary objects into movables array
-const movables = [background, ...boundaries, foreground];
+const movables = [background, ...boundaries, foreground, ...battleZones];
 
 function rectangularCollision( {rectangle1, rectangle2} ) {
     return (rectangle1.position.x + rectangle1.width >= rectangle2.position.x &&
@@ -117,6 +141,9 @@ function animate() {
     boundaries.forEach(boundary => {
         boundary.draw();
     });
+    battleZones.forEach(battleZone => {
+        battleZone.draw();
+    })
     player.draw();
     foreground.draw();
 

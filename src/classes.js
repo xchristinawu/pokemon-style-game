@@ -1,5 +1,5 @@
 class Sprite {
-    constructor({position, velocity, image, frames = { max: 1 }, sprites }) {
+    constructor({ position, velocity, image, frames = { max: 1 }, sprites }) {
         this.position = position;
         this.image = image;
         this.frames = { ...frames, val: 0, elapsed: 0 };
@@ -51,7 +51,7 @@ class Boundary {
     }
 
     draw() {
-        c.fillStyle = 'rgba(255, 0, 0, 0)';
+        c.fillStyle = 'rgba(255, 0, 0, 0.5)';
         c.fillRect(this.position.x, this.position.y, this.width, this.height);
     }
 }
