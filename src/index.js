@@ -173,6 +173,18 @@ function animate() {
             ) {
                 console.log('activate battle');
                 battle.initiated = true;
+                gsap.to('#overlappingDiv', {
+                    opacity: 1,
+                    repeat: 3,
+                    yoyo: true,
+                    duration: 0.4,
+                    onComplete() {
+                        gsap.to('#overlappingDiv', {
+                            opacity: 1,
+                            duration: 0.4
+                        })
+                    }
+                });
                 break;
             }
         };
